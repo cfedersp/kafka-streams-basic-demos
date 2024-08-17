@@ -180,21 +180,13 @@ public class App
         final Pattern pattern = Pattern.compile("\\W+");
         source.flatMapValues(value-> Arrays.asList(pattern.split(value.toLowerCase())))
             .peek((k,v) -> log.info("Observed event: {}", v))
-            //.map((key, value) -> new KeyValue<Object, Object>(value, value))
-            //.filter((key, value) -> (!value.equals("the")))
-            //.groupByKey()
             .groupBy((key, value) -> value, Grouped.with(Serdes.String(), Serdes.String()))
             .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1L)))
-            //.count()
-            //             .count(Materialized.<String, Long, WindowStore<Bytes, byte[]>>as("count2").with(Serdes.String(), Serdes.Long())).suppress(untilWindowCloses(unbounded()))
-            //.count(Materialized.with(Serdes.Bytes(), Serdes.ByteArray()).<String, Long, WindowStore<Bytes, byte[]>>as("count2")).suppress(untilWindowCloses(unbounded()))
             .count().suppress(untilWindowCloses(unbounded()))
-            //.mapValues(value->Long.toString(value))
             .toStream()
             .map((key, value) -> new KeyValue<String, Long>(key.key() + "@" + key.window().start() + "->" + key.window().end(), value))
 
-            //counts.map((wk, value) -> KeyValue.pair(wk.key, value))
-            .to(outputTopic, Produced.with(Serdes.String(), Serdes.Long())); //, (Produced<String, Long>) Produced.with(WindowedSerdes.timeWindowedSerdeFrom(String.class,1), Serdes.Long()));
+            .to(outputTopic, Produced.with(Serdes.String(), Serdes.Long()));
 
         return builder.build();
     }
